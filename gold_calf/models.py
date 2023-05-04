@@ -12,6 +12,7 @@ from gold_calf.consts import RolesType
 from gold_calf.db.base import BaseFields, Document
 from gold_calf.db.mailcode import MailCodeFields
 from gold_calf.db.user import UserFields
+from gold_calf.db.request import RequestFields
 from gold_calf.utils import roles_to_list
 
 
@@ -83,16 +84,10 @@ class BaseDBM(BaseModel):
 
 class User(BaseDBM):
     # db fields
-    mail: Optional[str] = Field(alias=UserFields.mail)    
     tokens: list[str] = Field(alias=UserFields.tokens, default=[])
     roles: list[str] = Field(alias=UserFields.roles, default=[])
-    salary: Optional[int] = Field(alias=UserFields.salary)
-    remote_radio: Optional[str] = Field(alias=UserFields.remote_radio)
-    work_year: Optional[int] = Field(alias=UserFields.work_year)
-    experience_level: Optional[str] = Field(alias=UserFields.experience_level)
-    employment_type: Optional[str] = Field(alias=UserFields.employment_type)
-    job_title: Optional[str] = Field(alias=UserFields.job_title)
     is_accepted: Optional[bool] = Field(alias=UserFields.is_accepted)
+    mail: Optional[str] = Field(alias=UserFields.mail)
     # direct linked models
     # ...
 
@@ -102,6 +97,18 @@ class User(BaseDBM):
     def compare_roles(self, needed_roles: RolesType) -> bool:
         needed_roles = roles_to_list(needed_roles)
         return bool(set(needed_roles) & set(self.roles))
+
+class Request(BaseDBM):
+    # db fields
+    mail: Optional[str] = Field(alias=RequestFields.mail)    
+    salary: Optional[int] = Field(alias=RequestFields.salary)
+    remote_radio: Optional[str] = Field(alias=RequestFields.remote_radio)
+    work_year: Optional[int] = Field(alias=RequestFields.work_year)
+    experience_level: Optional[str] = Field(alias=RequestFields.experience_level)
+    employment_type: Optional[str] = Field(alias=RequestFields.employment_type)
+    job_title: Optional[str] = Field(alias=RequestFields.job_title)
+    is_accepted: Optional[bool] = Field(alias=RequestFields.is_accepted)
+    user_id: Optional[int] = Field(alias=RequestFields.user_id)
 
 
 

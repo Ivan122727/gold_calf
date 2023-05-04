@@ -7,6 +7,7 @@ from pymongo.errors import OperationFailure, ConnectionFailure
 
 from gold_calf.db.mailcode import MailCodeCollection
 from gold_calf.db.user import UserCollection
+from gold_calf.db.request import RequestCollection
 
 
 class CannotConnectToDb(Exception):
@@ -39,6 +40,12 @@ class DB:
             pymongo_db=self.pymongo_db
         )
         self.collections.append(self.mail_code_collection)
+
+        self.request_collection: RequestCollection = RequestCollection.from_mongo_db(
+            motor_db=self.motor_db,
+            pymongo_db=self.pymongo_db
+        )
+        self.collections.append(self.request_collection)
 
     async def ensure_all_indexes(self):
         self.log.info('ensuring all indexes')

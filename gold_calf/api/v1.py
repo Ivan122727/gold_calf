@@ -7,13 +7,14 @@ from fastapi import APIRouter, HTTPException, Query, status, Depends, Body
 
 from gold_calf.api.deps import get_strict_current_user, make_strict_depends_on_roles
 from gold_calf.api.chema import OperationStatusOut, SensitiveUserOut, UserOut, UpdateUserIn, \
-    UserExistsStatusOut, RegUserIn, AuthUserIn, AcceptUserIn
+    UserExistsStatusOut, RegUserIn, AuthUserIn, AcceptUserIn, RequestIn, UpdateRequestIn, \
+        RequestOut, RequestExistsStatusOut
 from gold_calf.consts import MailCodeTypes, UserRoles
 from gold_calf.core import db
 from gold_calf.db.user import UserFields
 from gold_calf.models import User
 from gold_calf.services import get_user, get_mail_codes, create_mail_code, generate_token, create_user, get_users, \
-    remove_mail_code, update_user, try_accept_user
+    remove_mail_code, update_user, try_accept_user, create_request, get_request, update_request, get_requests
 from gold_calf.utils import send_mail
 
 api_v1_router = APIRouter(prefix="/v1")
@@ -166,35 +167,6 @@ async def me_update(update_user_in: UpdateUserIn, user: User = Depends(get_stric
         current_token=user.misc_data["current_token"]
     )
 
-@api_v1_router.post('/me.accept_user', response_model=OperationStatusOut, tags=['Me'])
-async def me_accept_user(update_user_in: AcceptUserIn, user: User = Depends(get_strict_current_user)):
-    update_user_data = update_user_in.dict(exclude_unset=True)
-    operation_status = await try_accept_user(
-        user=user,
-        **update_user_data
-    )
-    if operation_status:
-        requestor: User = await get_user(int_id=update_user_in.requester_id)
-        if update_user_in.is_accepted:
-            answer = "Вас приняли на собеседование, вы можете позвонить по этому номеру: 228"
-        else:
-            answer = "К сожалению вы нам не подходите"
-        send_mail(
-            to_email=requestor.mail,
-            subject="Ответ на заявку",
-            text=answer
-        )
-    return OperationStatusOut(is_done=operation_status)
-
-@api_v1_router.post('/me.get_requests', response_model=list[UserOut], tags=['Me'])
-async def get_requests(user: User = Depends(get_strict_current_user)):
-    all_users = await get_users()
-    requestor_users = list()
-    for requestor_user in all_users:
-        if not requestor_user.is_accepted:
-            requestor_users.append(requestor_user)
-    return [UserOut.parse_dbm_kwargs(**user.dict()) for user in requestor_users]
-
 
 """USER"""
 @api_v1_router.get('/user.mail_exists', response_model=UserExistsStatusOut, tags=['User'])
@@ -231,3 +203,43 @@ async def edit_user_role(
         raise HTTPException(status_code=400, detail="invalid role")
     await db.user_collection.update_document_by_id(id_=user.oid, set_={UserFields.roles: [role]})
     return UserOut.parse_dbm_kwargs(**(await get_user(id_=user.oid)).dict())
+
+
+"""REQUEST"""
+@api_v1_router.post("/send_request", response_model=OperationStatusOut, tags=["Request"])
+async def send_request(
+        reg_request_in: RequestIn = Body(...), user: User = Depends(get_strict_current_user)
+):
+    if await get_request(user_id=user.int_id) is not None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="you alredy send")
+
+    create_request_data = reg_request_in.dict(exclude_unset=True)
+    request = await create_request(
+        user_id=user.int_id,
+        **create_request_data
+    )
+    return OperationStatusOut(is_done=True)
+
+@api_v1_router.post('/update_request', response_model=OperationStatusOut, tags=['Request'])
+async def request_update(update_request_in: UpdateRequestIn, user: User = Depends(get_strict_current_user)):
+    request = await get_request(mail=user.mail)
+    if request is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="request not exist")
+    
+    update_request_data = update_request_in.dict(exclude_unset=True)
+    user = await update_request(
+        user=user,
+        **update_request_data
+    )
+    return OperationStatusOut(is_done=True)
+
+@api_v1_router.post('/get_requests', response_model=list[RequestOut], tags=['Request'])
+async def get_requests_route(user: User = Depends(get_strict_current_user)):
+     return [RequestOut.parse_dbm_kwargs(**user.dict()) for user in await get_requests()]
+
+@api_v1_router.get('/requests.exists', response_model=RequestExistsStatusOut, tags=['Request'])
+async def user_mail_exists(user: User = Depends(get_strict_current_user)):
+    request = await get_request(mail=user.mail)
+    if request is not None:
+        return RequestExistsStatusOut(is_exists=True)
+    return RequestExistsStatusOut(is_exists=False)

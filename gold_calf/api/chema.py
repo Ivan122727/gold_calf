@@ -41,8 +41,13 @@ class BaseSchemaIn(BaseSchema):
 
 
 class UserOut(BaseOutDBMSchema):
-    mail: str
     roles: list[str] = []
+    mail: Optional[str]
+    is_accepted: bool
+
+
+class RequestOut(BaseOutDBMSchema):
+    mail: str
     salary: Optional[int] = None
     remote_radio: Optional[str] = None
     work_year: Optional[int] = None
@@ -65,19 +70,6 @@ class ExistsStatusOut(BaseSchemaOut):
     is_exists: bool
 
 
-class UpdateUserIn(BaseSchemaIn):
-    salary: Optional[int] = None
-    remote_radio: Optional[str] = None
-    work_year: Optional[int] = None
-    experience_level: Optional[str] = None
-    employment_type: Optional[str] = None
-    job_title: Optional[str] = None
-    is_accepted: Optional[bool]
-
-class AcceptUserIn(BaseSchemaIn):
-    is_accepted: Optional[bool]
-    requester_id: int
-
 class UserExistsStatusOut(BaseSchemaOut):
     is_exists: bool
 
@@ -90,3 +82,34 @@ class RegUserIn(BaseSchemaIn):
 class AuthUserIn(BaseSchemaIn):
     mail: str
     code: str
+
+
+class UpdateUserIn(BaseSchemaIn):
+    is_accepted: Optional[bool]
+
+class UpdateRequestIn(BaseSchemaIn):
+    salary: Optional[int] = None
+    remote_radio: Optional[str] = None
+    work_year: Optional[int] = None
+    experience_level: Optional[str] = None
+    employment_type: Optional[str] = None
+    job_title: Optional[str] = None
+    mail: Optional[str] = None
+
+class AcceptUserIn(BaseSchemaIn):
+    is_accepted: Optional[bool]
+    requester_id: int
+
+
+class RequestIn(BaseSchemaIn):
+    mail: str
+    salary: int
+    remote_radio: str
+    work_year: int
+    experience_level: str
+    employment_type: str
+    job_title: str
+
+
+class RequestExistsStatusOut(BaseSchemaOut):
+    is_exists: bool
