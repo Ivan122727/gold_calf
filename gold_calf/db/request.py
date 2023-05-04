@@ -20,6 +20,6 @@ class RequestCollection(BaseCollection):
     async def ensure_indexes(self):
         await super().ensure_indexes()
         self.pymongo_collection.create_index(
-            [(RequestFields.user_id, pymongo.ASCENDING)],
+            [(RequestFields.user_id, pymongo.ASCENDING), (RequestFields.int_id, pymongo.ASCENDING)],
             unique=True, sparse=True
         )

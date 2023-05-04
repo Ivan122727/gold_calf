@@ -17,6 +17,7 @@ from gold_calf.db.request import RequestFields
 from gold_calf.helpers import NotSet, is_set
 from gold_calf.models import User, MailCode, Request
 from gold_calf.utils import roles_to_list
+from gold_calf.utils import send_mail
 
 log = logging.getLogger()
 
@@ -260,11 +261,11 @@ async def get_requests(*, roles: Optional[list[str]] = None) -> list[User]:
         requests = [user for user in requests if user.compare_roles(roles)]
     return requests
 
-async def try_accept_user(
+async def proccess_request(
         *,
         user: Union[User, ObjectId],
+        request_id: Union[NotSet, Optional[int]] = NotSet,
         is_accepted: Union[NotSet, Optional[bool]] = NotSet,
-        requester_id: Union[NotSet, Optional[int]] = NotSet,
 ):
     if isinstance(user, User):
         pass
@@ -276,18 +277,30 @@ async def try_accept_user(
     if user is None:
         raise ValueError("user is None")
 
-    if requester_id is None:
-        raise ValueError("requester_id is None")
+    if request_id is None:
+        raise ValueError("request_id is None")
 
     set_ = {}
     if is_set(is_accepted):
         set_[UserFields.is_accepted] = is_accepted
 
     if set_:
+        request = await get_request(int_id=request_id)
+        worker = await get_user(int_id=request.user_id)
         await db.user_collection.update_document_by_int_id(
-            int_id=requester_id,
+            int_id=request.user_id,
             set_=set_
         )
+        await db.request_collection.remove_by_int_id(int_id=request_id)
+        if is_accepted:
+            answer = "Вы были приглашены на собеседование, позвоните по этому номеру: 224!"
+        else:
+            answer = "К сожалению ваши навыки нам не подходят!"
+        send_mail(
+        to_email=worker.mail,
+        subject="Ответ на заявку",
+        text=answer
+    )
     return True
 
 

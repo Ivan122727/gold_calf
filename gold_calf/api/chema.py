@@ -55,7 +55,7 @@ class RequestOut(BaseOutDBMSchema):
     employment_type: Optional[str] = None
     job_title: Optional[str] = None
     is_accepted: bool
-
+    user_id: int
 
 class SensitiveUserOut(UserOut):
     tokens: list[str]
@@ -113,3 +113,7 @@ class RequestIn(BaseSchemaIn):
 
 class RequestExistsStatusOut(BaseSchemaOut):
     is_exists: bool
+
+class RequestAcceptIn(BaseSchemaOut):
+    request_id: int
+    is_accepted: bool
