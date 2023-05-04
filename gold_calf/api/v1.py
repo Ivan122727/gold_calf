@@ -178,12 +178,12 @@ async def user_mail_exists(mail: str = Query(...)):
 
 
 @api_v1_router.get('/user.all', response_model=list[UserOut], tags=['User'])
-async def get_all_users(user: User = Depends(get_strict_current_user)):
+async def get_all_users(user: User = Depends(make_strict_depends_on_roles(roles=[UserRoles.hr, UserRoles.dev]))):
     return [UserOut.parse_dbm_kwargs(**user.dict()) for user in await get_users()]
 
 
 @api_v1_router.get('/user.by_id', response_model=Optional[UserOut], tags=['User'])
-async def get_user_by_int_id(int_id: int, user: User = Depends(get_strict_current_user)):
+async def get_user_by_int_id(int_id: int, user: User = Depends(make_strict_depends_on_roles(roles=[UserRoles.hr, UserRoles.dev]))):
     user = await get_user(id_=int_id)
     if user is None:
         return None
@@ -192,7 +192,7 @@ async def get_user_by_int_id(int_id: int, user: User = Depends(get_strict_curren
 
 @api_v1_router.get('/user.edit_role', response_model=UserOut, tags=['User'])
 async def edit_user_role(
-        curr_user: User = Depends(make_strict_depends_on_roles(roles=[UserRoles.trainee])),
+        curr_user: User = Depends(make_strict_depends_on_roles(roles=[UserRoles.dev])),
         user_int_id: int = Query(...),
         role: str = Query(...)
 ):
@@ -234,7 +234,7 @@ async def request_update(update_request_in: UpdateRequestIn, user: User = Depend
     return OperationStatusOut(is_done=True)
 
 @api_v1_router.post('/get_requests', response_model=list[RequestOut], tags=['Request'])
-async def get_requests_route(user: User = Depends(get_strict_current_user)):
+async def get_requests_route(user: User = Depends(make_strict_depends_on_roles(roles=[UserRoles.hr, UserRoles.dev]))):
      return [RequestOut.parse_dbm_kwargs(**user.dict()) for user in await get_requests()]
 
 @api_v1_router.get('/request.exists', response_model=RequestExistsStatusOut, tags=['Request'])
@@ -246,7 +246,7 @@ async def request_exists(user: User = Depends(get_strict_current_user)):
 
 @api_v1_router.post('/accept_request', response_model=OperationStatusOut, tags=['Request'])
 async def user_mail_exists(
-    accept_data: RequestAcceptIn= Body(...), user: User = Depends(get_strict_current_user)):
+    accept_data: RequestAcceptIn= Body(...), user: User = Depends(make_strict_depends_on_roles(roles=[UserRoles.hr, UserRoles.dev]))):
     request = await get_request(int_id=accept_data.request_id)
     if request is None:
         return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="request is not exist")
