@@ -13,6 +13,7 @@ class UserFields(BaseFields):
     experience_level = "experience_level"
     employment_type = "employment_type"
     job_title = "job_title"
+    is_accepted = "is_accepted"
 
 class UserCollection(BaseCollection):
     COLLECTION_NAME = "user"

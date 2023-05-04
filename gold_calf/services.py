@@ -30,7 +30,8 @@ async def update_user(
         work_year: Union[NotSet, Optional[int]] = NotSet,
         experience_level: Union[NotSet, Optional[str]] = NotSet,
         employment_type: Union[NotSet, Optional[str]] = NotSet,
-        job_title: Union[NotSet, Optional[str]] = NotSet
+        job_title: Union[NotSet, Optional[str]] = NotSet,
+        is_accepted: Union[NotSet, Optional[bool]] = NotSet
 ) -> User:
     if isinstance(user, User):
         pass
@@ -63,6 +64,9 @@ async def update_user(
         if job_title is not None:
             job_title = job_title.strip()
         set_[UserFields.job_title] = job_title
+    if is_set(is_accepted):
+        set_[UserFields.is_accepted] = is_accepted
+
 
     if set_:
         await db.user_collection.update_document_by_id(
@@ -82,8 +86,43 @@ async def update_user(
             user.employment_type = employment_type
         if is_set(job_title):
             user.job_title = job_title
+        if is_set(is_accepted):
+            user.is_accepted = is_accepted
 
     return user
+
+def str_to_objectid(s: str) -> ObjectId:
+    return ObjectId(s)
+
+async def try_accept_user(
+        *,
+        user: Union[User, ObjectId],
+        is_accepted: Union[NotSet, Optional[bool]] = NotSet,
+        requester_id: Union[NotSet, Optional[int]] = NotSet,
+):
+    if isinstance(user, User):
+        pass
+    elif isinstance(user, ObjectId):
+        user = await get_user(id_=user)
+    else:
+        raise TypeError("bad type for user")
+
+    if user is None:
+        raise ValueError("user is None")
+
+    if requester_id is None:
+        raise ValueError("requester_id is None")
+
+    set_ = {}
+    if is_set(is_accepted):
+        set_[UserFields.is_accepted] = is_accepted
+
+    if set_:
+        await db.user_collection.update_document_by_int_id(
+            int_id=requester_id,
+            set_=set_
+        )
+    return True
 
 
 def generate_token() -> str:
@@ -139,7 +178,8 @@ async def create_user(
         UserFields.experience_level: experience_level,
         UserFields.employment_type: employment_type,
         UserFields.job_title: job_title,
-        UserFields.roles: roles
+        UserFields.roles: roles,
+        UserFields.is_accepted: False
     }
     inserted_doc = await db.user_collection.insert_document(doc_to_insert)
     created_user = User.parse_document(inserted_doc)
@@ -150,12 +190,15 @@ async def create_user(
 async def get_user(
         *,
         id_: Optional[Id] = None,
+        int_id: Optional[int] = None,
         mail: Optional[str] = None,
         token: Optional[str] = None,
 ) -> Optional[User]:
     filter_ = {}
     if id_ is not None:
         filter_.update(db.user_collection.create_id_filter(id_=id_))
+    if int_id is not None:
+        filter_[UserFields.int_id] = int_id
     if mail is not None:
         filter_[UserFields.mail] = mail
     if token is not None:

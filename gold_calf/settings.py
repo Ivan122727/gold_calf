@@ -34,7 +34,7 @@ class Settings(BaseSettings):
 
     mode: str = Modes.dev
 
-    emulate_mail_sending: bool = False
+    emulate_mail_sending: bool = True
 
     @property
     def mongo_uri(self) -> str:

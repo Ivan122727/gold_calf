@@ -7,13 +7,13 @@ from fastapi import APIRouter, HTTPException, Query, status, Depends, Body
 
 from gold_calf.api.deps import get_strict_current_user, make_strict_depends_on_roles
 from gold_calf.api.chema import OperationStatusOut, SensitiveUserOut, UserOut, UpdateUserIn, \
-    UserExistsStatusOut, RegUserIn, AuthUserIn
+    UserExistsStatusOut, RegUserIn, AuthUserIn, AcceptUserIn
 from gold_calf.consts import MailCodeTypes, UserRoles
 from gold_calf.core import db
 from gold_calf.db.user import UserFields
 from gold_calf.models import User
 from gold_calf.services import get_user, get_mail_codes, create_mail_code, generate_token, create_user, get_users, \
-    remove_mail_code, update_user
+    remove_mail_code, update_user, try_accept_user
 from gold_calf.utils import send_mail
 
 api_v1_router = APIRouter(prefix="/v1")
@@ -165,3 +165,69 @@ async def me_update(update_user_in: UpdateUserIn, user: User = Depends(get_stric
         **(await get_user(id_=user.oid)).dict(),
         current_token=user.misc_data["current_token"]
     )
+
+@api_v1_router.post('/me.accept_user', response_model=OperationStatusOut, tags=['Me'])
+async def me_accept_user(update_user_in: AcceptUserIn, user: User = Depends(get_strict_current_user)):
+    update_user_data = update_user_in.dict(exclude_unset=True)
+    operation_status = await try_accept_user(
+        user=user,
+        **update_user_data
+    )
+    if operation_status:
+        requestor: User = await get_user(int_id=update_user_in.requester_id)
+        if update_user_in.is_accepted:
+            answer = "Вас приняли на собеседование, вы можете позвонить по этому номеру: 228"
+        else:
+            answer = "К сожалению вы нам не подходите"
+        send_mail(
+            to_email=requestor.mail,
+            subject="Ответ на заявку",
+            text=answer
+        )
+    return OperationStatusOut(is_done=operation_status)
+
+@api_v1_router.post('/me.get_requests', response_model=list[UserOut], tags=['Me'])
+async def get_requests(user: User = Depends(get_strict_current_user)):
+    all_users = await get_users()
+    requestor_users = list()
+    for requestor_user in all_users:
+        if not requestor_user.is_accepted:
+            requestor_users.append(requestor_user)
+    return [UserOut.parse_dbm_kwargs(**user.dict()) for user in requestor_users]
+
+
+"""USER"""
+@api_v1_router.get('/user.mail_exists', response_model=UserExistsStatusOut, tags=['User'])
+async def user_mail_exists(mail: str = Query(...)):
+    user = await get_user(mail=mail)
+    if user is not None:
+        return UserExistsStatusOut(is_exists=True)
+    return UserExistsStatusOut(is_exists=False)
+
+
+@api_v1_router.get('/user.all', response_model=list[UserOut], tags=['User'])
+async def get_all_users(user: User = Depends(get_strict_current_user)):
+    return [UserOut.parse_dbm_kwargs(**user.dict()) for user in await get_users()]
+
+
+@api_v1_router.get('/user.by_id', response_model=Optional[UserOut], tags=['User'])
+async def get_user_by_int_id(int_id: int, user: User = Depends(get_strict_current_user)):
+    user = await get_user(id_=int_id)
+    if user is None:
+        return None
+    return UserOut.parse_dbm_kwargs(**user.dict())
+
+
+@api_v1_router.get('/user.edit_role', response_model=UserOut, tags=['User'])
+async def edit_user_role(
+        curr_user: User = Depends(make_strict_depends_on_roles(roles=[UserRoles.trainee])),
+        user_int_id: int = Query(...),
+        role: str = Query(...)
+):
+    user = await get_user(id_=user_int_id)
+    if user is None:
+        raise HTTPException(status_code=400, detail="user is none")
+    if not role in UserRoles.set():
+        raise HTTPException(status_code=400, detail="invalid role")
+    await db.user_collection.update_document_by_id(id_=user.oid, set_={UserFields.roles: [role]})
+    return UserOut.parse_dbm_kwargs(**(await get_user(id_=user.oid)).dict())

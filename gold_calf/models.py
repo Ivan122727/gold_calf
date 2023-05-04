@@ -92,6 +92,7 @@ class User(BaseDBM):
     experience_level: Optional[str] = Field(alias=UserFields.experience_level)
     employment_type: Optional[str] = Field(alias=UserFields.employment_type)
     job_title: Optional[str] = Field(alias=UserFields.job_title)
+    is_accepted: Optional[bool] = Field(alias=UserFields.is_accepted)
     # direct linked models
     # ...
 
@@ -102,11 +103,6 @@ class User(BaseDBM):
         needed_roles = roles_to_list(needed_roles)
         return bool(set(needed_roles) & set(self.roles))
 
-    @property
-    def at_tg_username(self) -> str:
-        if self.tg_username is not None:
-            return f"@{self.tg_username}"
-        return ""
 
 
 class MailCode(BaseDBM):

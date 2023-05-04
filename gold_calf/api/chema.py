@@ -38,7 +38,7 @@ class BaseOutDBMSchema(BaseSchemaOut):
 
 class BaseSchemaIn(BaseSchema):
     pass
-  
+
 
 class UserOut(BaseOutDBMSchema):
     mail: str
@@ -49,23 +49,7 @@ class UserOut(BaseOutDBMSchema):
     experience_level: Optional[str] = None
     employment_type: Optional[str] = None
     job_title: Optional[str] = None
-
-
-class InTeamUser(UserOut):
-    is_captain: bool
-
-
-class TeamOut(BaseOutDBMSchema):
-    captain_oid: str
-    title: str
-    description: str
-    users: list[InTeamUser]
-
-
-class TeamUpdate(BaseSchemaIn):
-    team_int_id: int
-    title: str
-    description: str
+    is_accepted: bool
 
 
 class SensitiveUserOut(UserOut):
@@ -88,7 +72,11 @@ class UpdateUserIn(BaseSchemaIn):
     experience_level: Optional[str] = None
     employment_type: Optional[str] = None
     job_title: Optional[str] = None
+    is_accepted: Optional[bool]
 
+class AcceptUserIn(BaseSchemaIn):
+    is_accepted: Optional[bool]
+    requester_id: int
 
 class UserExistsStatusOut(BaseSchemaOut):
     is_exists: bool
