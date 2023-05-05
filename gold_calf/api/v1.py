@@ -222,7 +222,7 @@ async def send_request(
 
 @api_v1_router.post('/update_request', response_model=OperationStatusOut, tags=['Request'])
 async def request_update(update_request_in: UpdateRequestIn, user: User = Depends(get_strict_current_user)):
-    request = await get_request(mail=user.mail)
+    request = await get_request(user_id=user.int_id)
     if request is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="request not exist")
     
