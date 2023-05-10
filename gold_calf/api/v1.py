@@ -14,7 +14,7 @@ from gold_calf.core import db
 from gold_calf.db.user import UserFields
 from gold_calf.models import User
 from gold_calf.services import get_user, get_mail_codes, create_mail_code, generate_token, create_user, get_users, \
-    remove_mail_code, update_user, create_request, get_request, update_request, get_requests, proccess_request
+    remove_mail_code, update_user, create_request, get_request, update_request, get_requests, proccess_request, remove_request
 from gold_calf.utils import send_mail
 
 api_v1_router = APIRouter(prefix="/v1")
@@ -254,3 +254,17 @@ async def user_mail_exists(
     if await proccess_request(user=user, request_id=accept_data.request_id, is_accepted=accept_data.is_accepted):
         return OperationStatusOut(is_done=True)
     return OperationStatusOut(is_done=False)
+
+@api_v1_router.get('/request.my', response_model=RequestOut, tags=['Request'])
+async def my_reguest(user: User = Depends(get_strict_current_user)):
+    request = await get_request(user_id=user.int_id)
+    if request is not None:
+        return RequestOut.parse_dbm_kwargs(
+        **request.dict(),
+        )
+    return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Request not exist")
+
+@api_v1_router.get('/request.delete_my', response_model=OperationStatusOut, tags=['Request'])
+async def delete_my_reguest(user: User = Depends(get_strict_current_user)):
+    await remove_request(user_id=user.int_id)
+    return OperationStatusOut(is_done=True)        

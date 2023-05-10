@@ -261,6 +261,11 @@ async def get_requests(*, roles: Optional[list[str]] = None) -> list[User]:
         requests = [user for user in requests if user.compare_roles(roles)]
     return requests
 
+async def remove_request(*, user_id: int):
+    request = await get_request(user_id=user_id)
+    if request is not None:
+            await db.request_collection.remove_by_int_id(int_id=request.int_id)
+
 async def proccess_request(
         *,
         user: Union[User, ObjectId],

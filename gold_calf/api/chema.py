@@ -110,7 +110,6 @@ class RequestIn(BaseSchemaIn):
     employment_type: str
     job_title: str
 
-
 class RequestExistsStatusOut(BaseSchemaOut):
     is_exists: bool
 
