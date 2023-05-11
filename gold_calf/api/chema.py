@@ -113,6 +113,6 @@ class RequestIn(BaseSchemaIn):
 class RequestExistsStatusOut(BaseSchemaOut):
     is_exists: bool
 
-class RequestAcceptIn(BaseSchemaOut):
+class RequestAcceptIn(BaseSchemaIn):
     request_id: int
     is_accepted: bool
