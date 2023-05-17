@@ -6,8 +6,7 @@ from benchmark.data import users
 
 class UserHandler(HttpUser):
     wait_time = between(1, 3)  # Время ожидания между задачами
-    host = "http://127.0.0.1:8000/api/v1"
-    
+    host = users.host
     headers = {}
     
     def make_get_request(self, url: str) -> Response:

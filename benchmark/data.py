@@ -6,6 +6,7 @@ class Users:
     def __init__(self) -> None:
         load_dotenv("./benchmark_users.env")
         self.base_code_auth = "1111"
+        self.host = os.getenv("host")
         self.trainee = {
             "mail": os.getenv("trainee_mail")
         }
