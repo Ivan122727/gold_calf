@@ -60,12 +60,12 @@ class UserHandler(HttpUser):
     @task
     def healtcheck_task(self):
         response: Response = self.make_get_request("/healtcheck")
-        print(f"Полученный результат: {response.text}")
+        print(f"Полученный результат: {response.status_code}")
     
     @task
     def roles_task(self):
         response: Response = self.make_get_request("/roles")
-        print(f"Полученный результат: {response.text}")
+        print(f"Полученный результат: {response.status_code}")
 
     @task
     def auth_user_task(self):

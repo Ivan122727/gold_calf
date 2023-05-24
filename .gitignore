@@ -23,6 +23,7 @@ config
 venv
 
 # concrete files
+benchmark_users.env
 .env
 .env_test_prod
 test.txt
